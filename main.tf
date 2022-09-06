@@ -34,7 +34,7 @@ resource "azurerm_subnet" "my_terraform_subnet" {
 }
 
 # Create second subnet
-resource "azurerm_subnet" "my_terraform_subnet" {
+resource "azurerm_subnet" "my_second_terraform_subnet" {
   name                 = "anotherSubnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.my_second_terraform_network.name
