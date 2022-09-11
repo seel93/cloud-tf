@@ -20,3 +20,8 @@ terraform {
 provider "azurerm" {
   features {}
 }
+
+module "vnet" {
+  source = "../network"
+}
+
