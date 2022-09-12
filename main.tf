@@ -16,4 +16,4 @@ module "vm" {
   source = "./modules/vm"
   resource_group_location = var.resource_group_location
   resource_group_name_prefix = var.resource_group_name
-}K
+}
