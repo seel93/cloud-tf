@@ -12,35 +12,20 @@ resource "azurerm_resource_group" "rg" {
 # Create virtual network
 resource "azurerm_virtual_network" "my_terraform_network" {
   name                = "myVnet"
-  address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-}
-
-# Create second virtual network
-resource "azurerm_virtual_network" "my_second_terraform_network" {
-  name                = "myVnet2"
   address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-}
 
-# Create subnet
-resource "azurerm_subnet" "my_terraform_subnet" {
-  name                 = "mySubnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.my_terraform_network.name
-  address_prefixes     = ["10.0.1.0/24"]
-}
+  subnet {
+    address_prefix = "10.0.0.0/24"
+    name           = "subnet1"
+  }
 
-# Create second subnet
-resource "azurerm_subnet" "my_second_terraform_subnet" {
-  name                 = "anotherSubnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.my_second_terraform_network.name
-  address_prefixes     = ["10.0.1.0/24"]
+  subnet {
+    address_prefix = "10.0.1.0/24"
+    name           = "subnet2"
+  }
 }
-
 
 # Create public IPs
 resource "azurerm_public_ip" "my_terraform_public_ip" {
@@ -77,11 +62,24 @@ resource "azurerm_network_interface" "my_terraform_nic" {
 
   ip_configuration {
     name                          = "my_nic_configuration"
-    subnet_id                     = azurerm_subnet.my_second_terraform_subnet.id
+    subnet_id                     = azurerm_virtual_network.my_terraform_network.subnet.*.id[0]
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.my_terraform_public_ip.id
   }
 }
+
+resource "azurerm_network_interface" "my_second_terraform_nic" {
+  name                = "mySecondNIC"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_virtual_network.my_terraform_network.subnet.*.id[1]
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
 
 # Connect the security group to the network interface
 resource "azurerm_network_interface_security_group_association" "example" {
@@ -136,6 +134,41 @@ resource "azurerm_linux_virtual_machine" "my_terraform_vm" {
   }
 
   computer_name                   = "myvm"
+  admin_username                  = "azureuser"
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = tls_private_key.example_ssh.public_key_openssh
+  }
+
+  boot_diagnostics {
+    storage_account_uri = azurerm_storage_account.my_storage_account.primary_blob_endpoint
+  }
+}
+
+# Create virtual machine
+resource "azurerm_linux_virtual_machine" "my_second_terraform_vm" {
+  name                  = "mySecondVM"
+  location              = azurerm_resource_group.rg.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  network_interface_ids = [azurerm_network_interface.my_second_terraform_nic.id]
+  size                  = "Standard_DS1_v2"
+
+  os_disk {
+    name                 = "mySecondOsDisk"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+
+  computer_name                   = "mysecondvm"
   admin_username                  = "azureuser"
   disable_password_authentication = true
 
