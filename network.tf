@@ -1,21 +1,3 @@
-# Create virtual network
-resource "azurerm_virtual_network" "my_terraform_network" {
-  name                = "myVnet"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  address_space       = ["10.0.0.0/16"]
-
-  subnet {
-    address_prefix = "10.0.0.0/24"
-    name           = "subnet1"
-  }
-
-  subnet {
-    address_prefix = "10.0.1.0/24"
-    name           = "subnet2"
-  }
-}
-
 # Create public IPs
 resource "azurerm_public_ip" "my_terraform_public_ip" {
   name                = "myPublicIP"
@@ -53,7 +35,7 @@ resource "azurerm_network_interface" "my_terraform_nic" {
     name                          = "my_nic_configuration"
     subnet_id                     = azurerm_virtual_network.my_terraform_network.subnet.*.id[0]
     private_ip_address_allocation = "Dynamic"
-    //public_ip_address_id          = azurerm_public_ip.my_terraform_public_ip.id
+    public_ip_address_id          = azurerm_public_ip.my_terraform_public_ip.id
   }
 }
 
@@ -64,7 +46,7 @@ resource "azurerm_network_interface" "my_second_terraform_nic" {
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_virtual_network.my_terraform_network.subnet.*.id[1]
+    subnet_id                     = azurerm_virtual_network.my_second_terraform_network.subnet.*.id[0]
     private_ip_address_allocation = "Dynamic"
   }
 }
@@ -74,4 +56,18 @@ resource "azurerm_network_interface" "my_second_terraform_nic" {
 resource "azurerm_network_interface_security_group_association" "example" {
   network_interface_id      = azurerm_network_interface.my_terraform_nic.id
   network_security_group_id = azurerm_network_security_group.my_terraform_nsg.id
+}
+
+resource "azurerm_virtual_network_peering" "vnet_peering_1" {
+  name                      = "peer1to2"
+  resource_group_name       = azurerm_resource_group.rg.name
+  virtual_network_name      = azurerm_virtual_network.my_terraform_network.name
+  remote_virtual_network_id = azurerm_virtual_network.my_second_terraform_network.id
+}
+
+resource "azurerm_virtual_network_peering" "vnet_peering_2" {
+  name                      = "peer2to1"
+  resource_group_name       = azurerm_resource_group.rg.name
+  virtual_network_name      = azurerm_virtual_network.my_second_terraform_network.name
+  remote_virtual_network_id = azurerm_virtual_network.my_terraform_network.id
 }
