@@ -17,7 +17,7 @@ resource "azurerm_batch_pool" "example" {
   name                = "examplepool"
   resource_group_name = azurerm_resource_group.rg.name
   account_name        = azurerm_batch_account.batch_account.name
-  node_agent_sku_id   = "batch.node.ubuntu 18.04"
+  node_agent_sku_id   = "batch.node.windows amd64"
   vm_size             = "Standard_A1"
 
   fixed_scale {
@@ -25,9 +25,9 @@ resource "azurerm_batch_pool" "example" {
   }
 
   storage_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-lts"
+    publisher = "microsoftwindowsserver"
+    offer     = "windowsserver"
+    sku       = "2019-datacenter"
     version   = "latest"
   }
 }
